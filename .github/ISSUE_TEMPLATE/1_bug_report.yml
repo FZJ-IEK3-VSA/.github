@@ -54,13 +54,6 @@ body:
         Please describe or show a code example of the expected behavior.
 
   - type: textarea
-    id: EnvironmentConda
-    attributes:
-      label: conda list
-      description: >
-        Please share information on your environment. Paste the output of the command ``conda list`` below.
-
-  - type: textarea
     id: EnvironmentPip
     attributes:
       label: pip list -v
