@@ -1,5 +1,5 @@
 ---
-name: Feature Request
+name: Question
 about: Suggest an idea for this project
 type: 'General question'
 
