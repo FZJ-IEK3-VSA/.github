@@ -14,11 +14,11 @@ body:
       label: Version Checks (indicate both or one)
       options:
         - label: >
-            I have confirmed this bug exists on the lastest commit on the master branch of geokit.
+            I have confirmed this bug exists on the lastest commit on the master branch
         - label: >
-            I have confirmed this bug exists on the lastest commit on the dev branch of geokit.
+            I have confirmed this bug exists on the lastest commit on the dev branch.
         - label: >
-            I have confirmed this bug exists for a specific version of geokit.
+            I have confirmed this bug exists for a specific version the software.
 
   - type: textarea
     id: problem
@@ -38,7 +38,7 @@ body:
       description: >
         Please provide a minimal reproduciable example. See how to [craft minimal bug reports](https://matthewrocklin.com/minimal-bug-reports).
       placeholder: >
-        import geokit as gk
+        import ...
 
         ...
 
