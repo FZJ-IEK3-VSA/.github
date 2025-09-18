@@ -59,3 +59,4 @@ body:
       label: pip list -v
       description: >
         Please share information on your environment. Paste the output of the command ''pip list -v'' below.
+      render: bash
