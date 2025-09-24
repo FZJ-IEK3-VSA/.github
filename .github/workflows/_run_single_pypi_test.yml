@@ -65,7 +65,7 @@ jobs:
         if: ${{ inputs.library_name == '' }}
         run: |
             ls      
-            mamba run --name test_env pip install .${{ inputs.additional_conda_forge_dependencies }}
+            mamba run --name test_env pip install .${{ inputs.optional_dependency_PyPI_tag }}
             echo "pip installation is done"
             pip list -v
             echo "All dependencies are shown"
@@ -75,7 +75,7 @@ jobs:
         if: ${{ inputs.library_name != '' }}
         run: |
             ls      
-            mamba run --name test_env pip install .${{ inputs.additional_conda_forge_dependencies }} ${{ inputs.library_name }}==${{ inputs.library_version }}
+            mamba run --name test_env pip install .${{ inputs.optional_dependency_PyPI_tag }} ${{ inputs.library_name }}==${{ inputs.library_version }}
             echo "pip installation is done"
             pip list -v
             echo "All dependencies are shown"
