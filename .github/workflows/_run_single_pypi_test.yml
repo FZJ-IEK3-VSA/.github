@@ -40,7 +40,7 @@ defaults:
     shell: pwsh
 
 jobs:
-  run-conda-forge-test:
+  run-pypi-test:
     name: 'Run test for ${{ inputs.library_name }}=${{ inputs.library_version }} on ${{ inputs.runner_tag }}'
     runs-on: ${{ inputs.runner_tag }}
     steps:

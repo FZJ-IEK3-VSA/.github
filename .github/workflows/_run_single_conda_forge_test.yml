@@ -3,14 +3,6 @@ name: Install software from conda forge and run tests
 on:
   workflow_call:
     inputs:
-      library_name:
-        description: 'Name of the library which should be installed for a specific version'
-        required: true
-        type: string
-      library_version:
-        description: 'Version of the library that should be installed'
-        required: true
-        type: string
       runner_tag:
         description: 'Tag of the runner that should be run'
         required: true
@@ -19,9 +11,20 @@ on:
         description: 'Name of the requirements file that should be used to create the environment'
         required: true
         type: string
+      library_name:
+        description: 'Name of the library which should be installed for a specific version'
+        default: ""
+        required: false
+        type: string
+      library_version:
+        description: 'Version of the library that should be installed'
+        default: ""
+        required: false
+        type: string
       dependency_position_env_file:
         description: 'Name of the requirements file that should be used to create the environment'
-        required: true
+        default: ""
+        required: false
         type: string
       ipynb_example_folder:
         description: 'Name of folder which contains ipynb examples that should be executed as a test'
@@ -48,6 +51,7 @@ jobs:
           conda-remove-defaults: "true"
       - name: Update values.yaml
         uses: fjogeleit/yaml-update-action@main
+        if: ${{ inputs.ipynb_example_folder }}!= 'No Example Folder'
         with:
           valueFile: 'requirements_dev.yml'
           commitChange: false
@@ -57,7 +61,7 @@ jobs:
           # with the first dependency as "0".
           changes: |
             {
-            "dependencies[${{ inputs.dependency_position_env_file }}]": "${{ inputs.library_name }} =${{ inputs.library_version }}"
+            "dependencies[${{ inputs.dependency_position_env_file }}]": "${{ inputs.library_name }}=${{ inputs.library_version }}"
             }
       - name: Setup environment
         run: |
