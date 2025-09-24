@@ -23,7 +23,7 @@ on:
         type: string
       dependency_position_env_file:
         description: 'Name of the requirements file that should be used to create the environment'
-        default: ""
+        default: ''
         required: false
         type: string
       ipynb_example_folder:
@@ -51,9 +51,9 @@ jobs:
           conda-remove-defaults: "true"
       - name: Update values.yaml
         uses: fjogeleit/yaml-update-action@main
-        if: ${{ inputs.ipynb_example_folder }}!= 'No Example Folder'
+        if: ${{ inputs.dependency_position_env_file }}!= ''
         with:
-          valueFile: 'requirements_dev.yml'
+          valueFile: ${{ inputs.requirements_file_name }}
           commitChange: false
           method: CreateOrUpdate
           # The number in the brackets needs behind at "dependencies[...]" needs to ab adjusted when dependencies are
@@ -65,10 +65,10 @@ jobs:
             }
       - name: Setup environment
         run: |
-            get-content requirements_dev.yml
+            get-content ${{ inputs.requirements_file_name }}
             ls
             echo "LS Done"
-            mamba env create --name test_env --yes --file requirements_dev.yml
+            mamba env create --name test_env --yes --file ${{ inputs.requirements_file_name }} 
             mamba run --name test_env pip install -e . --no-deps
             echo "Installation done"
             mamba list --name test_env
