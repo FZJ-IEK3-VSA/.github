@@ -3,26 +3,27 @@ name: Install software from PyPI and run tests
 on:
   workflow_call:
     inputs:
+      runner_tag:
+        description: 'Tag of the runner that should be run'
+        required: true
+        type: string
       python_version:
         description: 'Python version which should be used to setup the environment'
         required: true
         type: string
       additional_conda_forge_dependencies:
-        description: 'Python version which should be used to setup the environment'
-        default: ""
+        description: 'Python version which should be used to setup the environment. The complete string must be given with or without version constrain e.g. glpg=5.0 or glpk'
+        default: ''
         required: false
         type: string
       library_name:
         description: 'Name of the library which should be installed for a specific version'
-        required: true
+        default: ''
+        required: false
         type: string
       library_version:
         description: 'Version of the library that should be installed'
-        required: true
-        type: string
-      runner_tag:
-        description: 'Tag of the runner that should be run'
-        required: true
+        required: false
         type: string
       optional_dependency_PyPI_tag:
         description: 'Additional string that is placed after the dot of pip install'
@@ -52,7 +53,7 @@ jobs:
           channels: conda-forge
           activate-environment: ""
           conda-remove-defaults: "true"
-      - name: Setup Environment
+      - name: Setup Python Environment from conda-forge
         run: |
             ls
             echo "LS Done"
@@ -60,6 +61,20 @@ jobs:
             echo "Python setup is done"
             mamba list --name test_env
             echo "Print dependencies from conda forge before installing PyPI dependencies"
+      - name: Setup Environment PyPI from without additional dependencies
+        if: ${{ inputs.library_name == '' }}
+        run: |
+            ls      
+            mamba run --name test_env pip install .${{ inputs.additional_conda_forge_dependencies }}
+            echo "pip installation is done"
+            pip list -v
+            echo "All dependencies are shown"
+            pip check
+            echo "checked for dependency conflicts"
+      - name: Setup Environment PyPI from with additional dependencies
+        if: ${{ inputs.library_name != '' }}
+        run: |
+            ls      
             mamba run --name test_env pip install .${{ inputs.additional_conda_forge_dependencies }} ${{ inputs.library_name }}==${{ inputs.library_version }}
             echo "pip installation is done"
             pip list -v
@@ -72,7 +87,7 @@ jobs:
           mamba run --name test_env pytest -n auto  -vv
           echo "Pytest done"
       - name: Run Examples PyPI
-        if: ${{ inputs.ipynb_example_folder }}!= 'No Example Folder'
+        if: ${{ inputs.ipynb_example_folder != 'No Example Folder' }}
         run: |
             mamba run --name test_env python -m pytest -n auto --dist loadscope --nbval-lax --nbval-current-env  --durations=20 ${{ inputs.ipynb_example_folder }}/
 
