@@ -51,7 +51,7 @@ jobs:
           conda-remove-defaults: "true"
       - name: Update values.yaml
         uses: fjogeleit/yaml-update-action@main
-        if: inputs.dependency_position_env_file != 'skip'
+        if: ${{ inputs.dependency_position_env_file != 'skip' }}
         with:
           valueFile: ${{ inputs.requirements_file_name }}
           commitChange: false
