@@ -81,6 +81,6 @@ jobs:
       - name: Run Examples Conda Forge
         if: ${{ inputs.ipynb_example_folder != 'No Example Folder' }}
         run: |
-            mamba run --name test_env python -m pytest -n auto --dist loadscope --nbval-lax --nbval-current-env  --durations=20 ${{ inputs.ipynb_example_folder }}/
+            mamba run --name test_env python -m pytest -vv --dist loadscope --nbval-lax --nbval-current-env  --durations=20 ${{ inputs.ipynb_example_folder }}/
 
 
