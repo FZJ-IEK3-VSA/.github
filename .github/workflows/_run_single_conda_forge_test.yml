@@ -1,0 +1,82 @@
+name: Install software from conda forge and run tests
+
+on:
+  workflow_call:
+    inputs:
+      library_name:
+        description: 'Name of the library which should be installed for a specific version'
+        required: true
+        type: string
+      library_version:
+        description: 'Version of the library that should be installed'
+        required: true
+        type: string
+      runner_tag:
+        description: 'Tag of the runner that should be run'
+        required: true
+        type: string
+      requirements_file_name:
+        description: 'Name of the requirements file that should be used to create the environment'
+        required: true
+        type: string
+      dependency_position_env_file:
+        description: 'Name of the requirements file that should be used to create the environment'
+        required: true
+        type: string
+      ipynb_example_folder:
+        description: 'Name of folder which contains ipynb examples that should be executed as a test'
+        default: 'No Example Folder'
+        required: false
+        type: string
+    
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  run-conda-forge-test:
+    name: 'Run test for ${{ inputs.library_name }}=${{ inputs.library_version }} on ${{ inputs.runner_tag }}'
+    runs-on: ${{ inputs.runner_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: 25.3.0-3
+          channels: conda-forge
+          activate-environment: ""
+          conda-remove-defaults: "true"
+      - name: Update values.yaml
+        uses: fjogeleit/yaml-update-action@main
+        with:
+          valueFile: 'requirements_dev.yml'
+          commitChange: false
+          method: CreateOrUpdate
+          # The number in the brackets needs behind at "dependencies[...]" needs to ab adjusted when dependencies are
+          # added or removed. It represents the position of the dependency in the "requirements-dev.yml" file starting
+          # with the first dependency as "0".
+          changes: |
+            {
+            "dependencies[${{ inputs.dependency_position_env_file }}]": "${{ inputs.library_name }} =${{ inputs.library_version }}"
+            }
+      - name: Setup environment
+        run: |
+            get-content requirements_dev.yml
+            ls
+            echo "LS Done"
+            mamba env create --name test_env --yes --file requirements_dev.yml
+            mamba run --name test_env pip install -e . --no-deps
+            echo "Installation done"
+            mamba list --name test_env
+            echo "packages printed"
+      - name: Run tests
+        run: |
+          echo "start pytest"
+          mamba run --name test_env pytest -n auto  -vv
+          echo "Pytest done"
+      - name: Run Examples Conda Forge
+        if: ${{ inputs.ipynb_example_folder }}!= 'No Example Folder'
+        run: |
+            mamba run --name test_env python -m pytest -n auto --dist loadscope --nbval-lax --nbval-current-env  --durations=20 ${{ inputs.ipynb_example_folder }}/
+
+
