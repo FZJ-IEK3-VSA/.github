@@ -4,41 +4,41 @@ on:
   workflow_call:
     inputs:
       runner_tag:
-        description: 'Tag of the runner that should be run'
+        description: "Tag of the runner that should be run"
         required: true
         type: string
       requirements_file_name:
-        description: 'Name of the requirements file that should be used to create the environment'
+        description: "Name of the requirements file that should be used to create the environment"
         required: true
         type: string
       library_name:
-        description: 'Name of the library which should be installed for a specific version'
+        description: "Name of the library which should be installed for a specific version"
         default: ""
         required: false
         type: string
       library_version:
-        description: 'Version of the library that should be installed'
+        description: "Version of the library that should be installed"
         default: ""
         required: false
         type: string
       dependency_position_env_file:
-        description: 'Name of the requirements file that should be used to create the environment'
-        default: 'skip'
+        description: "Name of the requirements file that should be used to create the environment"
+        default: "skip"
         required: false
         type: string
       ipynb_example_folder:
-        description: 'Name of folder which contains ipynb examples that should be executed as a test'
-        default: 'No Example Folder'
+        description: "Name of folder which contains ipynb examples that should be executed as a test"
+        default: "No Example Folder"
         required: false
         type: string
-    
+
 defaults:
   run:
     shell: pwsh
 
 jobs:
   run-conda-forge-test:
-    name: 'Run test for ${{ inputs.library_name }}=${{ inputs.library_version }} on ${{ inputs.runner_tag }}'
+    name: "Run test for ${{ inputs.library_name }}=${{ inputs.library_version }} on ${{ inputs.runner_tag }}"
     runs-on: ${{ inputs.runner_tag }}
     steps:
       - name: Checkout
@@ -65,14 +65,14 @@ jobs:
             }
       - name: Setup environment
         run: |
-            get-content ${{ inputs.requirements_file_name }}
-            ls
-            echo "LS Done"
-            mamba env create --name test_env --yes --file ${{ inputs.requirements_file_name }} 
-            mamba run --name test_env pip install -e . --no-deps
-            echo "Installation done"
-            mamba list --name test_env
-            echo "packages printed"
+          get-content ${{ inputs.requirements_file_name }}
+          ls
+          echo "LS Done"
+          mamba env create --name test_env --yes --file ${{ inputs.requirements_file_name }} 
+          mamba run --name test_env pip install -e . --no-deps
+          echo "Installation done"
+          mamba list --name test_env
+          echo "packages printed"
       - name: Run tests
         run: |
           echo "start pytest"
@@ -81,6 +81,4 @@ jobs:
       - name: Run Examples Conda Forge
         if: ${{ inputs.ipynb_example_folder != 'No Example Folder' }}
         run: |
-            mamba run --name test_env python -m pytest -vv --dist loadscope --nbval-lax --nbval-current-env  --durations=20 ${{ inputs.ipynb_example_folder }}/
-
-
+          mamba run --name test_env python -m pytest -vv --dist loadscope --nbval-lax --nbval-current-env --nbval-cell-timeout=3000 --durations=20 ${{ inputs.ipynb_example_folder }}/
