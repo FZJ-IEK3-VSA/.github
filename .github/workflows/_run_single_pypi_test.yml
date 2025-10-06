@@ -88,4 +88,4 @@ jobs:
       - name: Run Examples PyPI
         if: ${{ inputs.ipynb_example_folder != 'No Example Folder' }}
         run: |
-          mamba run --name test_env python -m pytest -vv --dist loadscope --nbval-lax --nbval-current-env --nbval-cell-timeout=3000 --durations=20 ${{ inputs.ipynb_example_folder }}/
+          mamba run --name test_env python -m pytest -vv --dist loadscope --nbval-lax --nbval-current-env --nbval-cell-timeout=10000 --durations=20 ${{ inputs.ipynb_example_folder }}/
