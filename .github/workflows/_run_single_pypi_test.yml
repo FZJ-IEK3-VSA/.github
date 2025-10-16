@@ -82,7 +82,8 @@ jobs:
           pip check
           echo "checked for dependency conflicts"
       - name: Run Pytest
-        run: echo "start pytest"
+        run: |
+          echo "start pytest"
           mamba run --name test_env pytest -n auto  -vv
           echo "Pytest done"
       - name: Run Examples PyPI
