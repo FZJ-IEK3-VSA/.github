@@ -33,7 +33,12 @@ on:
         type: string
       examples_to_execute:
         description: "Relative path string of examples that should be executed"
-        default: "None"
+        default: "No Examples"
+        required: false
+        type: string
+      multiprocessing_example_string:
+        description: "String to be included to execute examples with multiprocessing. -n auto for automatic determination of runners, -n 2 for two runner 2 -n 3 for 3 runner ..."
+        default: ""
         required: false
         type: string
 
@@ -86,8 +91,8 @@ jobs:
       - name: Run all Examples Conda Forge
         if: ${{ inputs.ipynb_example_folder != 'No Example Folder' }}
         run: |
-          mamba run --name test_env python -m pytest -vv --dist loadscope --nbval-lax --nbval-current-env --nbval-cell-timeout=900000 --durations=20 ${{ inputs.ipynb_example_folder }}/
+          mamba run --name test_env python -m pytest ${{ inputs.multiprocessing_example_string }} -vv --dist loadscope --nbval-lax --nbval-current-env --nbval-cell-timeout=900000 --durations=20 ${{ inputs.ipynb_example_folder }}/
       - name: Run Selected Examples Conda Forge
-        if: ${{ inputs.ipynb_example_folder != 'No Example Folder' }}
+        if: ${{ inputs.examples_to_execute != 'No Examples' }}
         run: |
-          mamba run --name test_env python -m pytest -vv --dist loadscope --nbval-lax --nbval-current-env --nbval-cell-timeout=900000 --durations=20 ${{ inputs.examples_to_execute }}
+          mamba run --name test_env python -m pytest ${{ inputs.multiprocessing_example_string }} -vv --dist loadscope --nbval-lax --nbval-current-env --nbval-cell-timeout=900000 --durations=20 ${{ inputs.examples_to_execute }}
