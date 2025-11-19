@@ -1,9 +1,9 @@
 import json
 import pathlib
 
-# mamba search pandas --json > ".\querry_all_package_versions\pandas_version.json" 2>&1
+# mamba search numpy --json > ".\querry_all_package_versions\numpy_version.json" 2>&1
 current_directory = pathlib.Path(__file__).parent
-with open(current_directory.joinpath(r"pandas_version.json")) as handle:
+with open(current_directory.joinpath(r"numpy_version.json")) as handle:
     version_dict = json.loads(handle.read())
 
 package_list = version_dict["result"]["pkgs"]

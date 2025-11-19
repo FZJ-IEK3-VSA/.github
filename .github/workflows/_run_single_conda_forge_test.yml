@@ -73,6 +73,8 @@ jobs:
           channels: conda-forge
           activate-environment: "test_env"
           environment-file: ${{ inputs.requirements_file_name }}
+          conda-remove-defaults: "true"
+          auto-activate-base: false
       - name: Setup environment
         run: |
           get-content ${{ inputs.requirements_file_name }}
