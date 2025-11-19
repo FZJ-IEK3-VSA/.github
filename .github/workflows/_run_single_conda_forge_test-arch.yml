@@ -52,7 +52,13 @@ jobs:
     runs-on: ${{ inputs.runner_tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: 25.3.0-3
+          channels: conda-forge
+          activate-environment: ""
+          conda-remove-defaults: "true"
       - name: Update values.yaml
         uses: fjogeleit/yaml-update-action@main
         if: ${{ inputs.dependency_position_env_file != 'skip' }}
@@ -67,17 +73,12 @@ jobs:
             {
             "dependencies[${{ inputs.dependency_position_env_file }}]": "${{ inputs.library_name }}=${{ inputs.library_version }}"
             }
-      - uses: conda-incubator/setup-miniconda@v3
-        with:
-          miniforge-version: 25.9.1-0
-          channels: conda-forge
-          activate-environment: "test_env"
-          environment-file: ${{ inputs.requirements_file_name }}
       - name: Setup environment
         run: |
           get-content ${{ inputs.requirements_file_name }}
           ls
-          echo "LS Done" 
+          echo "LS Done"
+          mamba env create --name test_env --yes --file ${{ inputs.requirements_file_name }} 
           mamba run --name test_env pip install -e . --no-deps
           echo "Installation done"
           mamba list --name test_env
