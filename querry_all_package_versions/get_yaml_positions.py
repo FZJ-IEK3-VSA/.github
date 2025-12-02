@@ -1,6 +1,6 @@
 import yaml
 
-path_to_yaml_file = r"C:\Programming\RESKit\requirements-dev.yml"
+path_to_yaml_file = r"C:\Programming\geokit_backup\geokit\requirements-dev.yml"
 with open(path_to_yaml_file) as stream:
     try:
         output_dict = yaml.safe_load(stream)
