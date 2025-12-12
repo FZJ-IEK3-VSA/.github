@@ -69,7 +69,7 @@ jobs:
             }
       - uses: conda-incubator/setup-miniconda@v3
         with:
-          miniforge-version: 25.11.1-0
+          miniforge-version: 25.11.0-1
           channels: conda-forge
           activate-environment: "test_env"
           environment-file: ${{ inputs.requirements_file_name }}
