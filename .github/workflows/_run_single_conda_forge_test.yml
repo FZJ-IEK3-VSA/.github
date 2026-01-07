@@ -72,13 +72,13 @@ jobs:
           miniforge-version: 25.11.0-1
           channels: conda-forge
           activate-environment: "test_env"
-          environment-file: ${{ inputs.requirements_file_name }}
           conda-remove-defaults: "true"
           auto-activate-base: false
       - name: Setup environment
         run: |
           get-content ${{ inputs.requirements_file_name }}
           ls
+          mamba env create --name test_env --file=${{ inputs.requirements_file_name }} 
           echo "LS Done" 
           mamba run --name test_env pip install -e . --no-deps
           echo "Installation done"
