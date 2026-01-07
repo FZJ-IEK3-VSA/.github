@@ -52,7 +52,7 @@ jobs:
     runs-on: ${{ inputs.runner_tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Update values.yaml
         uses: fjogeleit/yaml-update-action@main
         if: ${{ inputs.dependency_position_env_file != 'skip' }}
