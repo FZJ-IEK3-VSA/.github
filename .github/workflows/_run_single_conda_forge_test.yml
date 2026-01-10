@@ -41,6 +41,11 @@ on:
         default: ""
         required: false
         type: string
+      multiprocessing_pytest_string:
+        description: "String to use multiprocessing in pytest. -n auto for automatic determination of runners, -n 2 for two runner 2 -n 3 for 3 runner ..."
+        default: ""
+        required: false
+        type: string
 
 defaults:
   run:
@@ -87,7 +92,7 @@ jobs:
       - name: Run tests
         run: |
           echo "start pytest"
-          mamba run --name test_env pytest -n auto  -vv
+          mamba run --name test_env pytest ${{ inputs.multiprocessing_example_string }}  -vv
           echo "Pytest done"
       - name: Run all Examples Conda Forge
         if: ${{ inputs.ipynb_example_folder != 'No Example Folder' }}
