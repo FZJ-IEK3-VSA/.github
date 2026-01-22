@@ -46,6 +46,13 @@ on:
         default: ""
         required: false
         type: string
+    secrets:
+      ZENODO_API_KEY:
+        description: "Zenodo API that is used to increase the acceptable download limit."
+        required: false
+      ZENODO_USER_AGENT_STRING:
+        description: "User agent string that is used when accessing Zenodo to increase the acceptable download limit."
+        required: false
 
 defaults:
   run:
@@ -55,6 +62,9 @@ jobs:
   run-conda-forge-test:
     name: "Run test for ${{ inputs.library_name }}=${{ inputs.library_version }} on ${{ inputs.runner_tag }}"
     runs-on: ${{ inputs.runner_tag }}
+    env:
+      ZENODO_API_KEY: ${{ secrets.ZENODO_API_KEY }}
+      ZENODO_USER_AGENT_STRING: ${{ secrets.ZENODO_USER_AGENT_STRING }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -72,6 +82,7 @@ jobs:
             {
             "dependencies[${{ inputs.dependency_position_env_file }}]": "${{ inputs.library_name }}=${{ inputs.library_version }}"
             }
+
       - uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: 25.11.0-1
