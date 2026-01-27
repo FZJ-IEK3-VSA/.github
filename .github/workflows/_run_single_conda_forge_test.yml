@@ -68,6 +68,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          lfs: true
       - name: Update values.yaml
         uses: fjogeleit/yaml-update-action@main
         if: ${{ inputs.dependency_position_env_file != 'skip' }}
