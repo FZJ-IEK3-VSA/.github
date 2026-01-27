@@ -55,6 +55,10 @@ jobs:
     name: "Run test for ${{ inputs.library_name }}=${{ inputs.library_version }} on ${{ inputs.runner_tag }}"
     runs-on: ${{ inputs.runner_tag }}
     steps:
+      - name: Initialize LFS
+        run: |
+          curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+          sudo apt-get install git-lfs
       - name: Checkout
         uses: actions/checkout@v6
         with:
