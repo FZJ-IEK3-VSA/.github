@@ -1,0 +1,188 @@
+# Reusable workflow to extract min or max version bounds for multiple libraries from environment.yml
+# Place this file at: FZJ-IEK3-VSA/.github/.github/workflows/_extract_env_versions_matrix.yml
+#
+# Usage in other repositories:
+#   jobs:
+#     extract-min-versions:
+#       uses: FZJ-IEK3-VSA/.github/.github/workflows/_extract_env_versions_matrix.yml@main
+#       with:
+#         libraries: "python,scikit-learn,pandas,numpy,pyomo,networkx,tqdm,highspy"
+#         version_type: min  # or "max"
+#
+#     test:
+#       needs: extract-min-versions
+#       strategy:
+#         matrix:
+#           dependencies: ${{ fromJSON(needs.extract-min-versions.outputs.matrix) }}
+#       ...
+#         library_name: ${{ matrix.dependencies.library_name }}
+#         library_version: ${{ matrix.dependencies.version }}
+#         dependency_position_env_file: ${{ matrix.dependencies.yaml_position }}
+
+name: Extract Environment Versions Matrix
+
+on:
+    workflow_call:
+        inputs:
+            libraries:
+                description: "Comma-separated list of library names to extract versions for (e.g., 'python,numpy,pandas')"
+                required: true
+                type: string
+            version_type:
+                description: "Which version to extract: 'min' (>=), 'max' (<=), or 'both'"
+                required: false
+                type: string
+                default: "min"
+            env_file:
+                description: "Path to the environment.yml file"
+                required: false
+                type: string
+                default: "environment.yml"
+        outputs:
+            matrix:
+                description: "JSON array of {library_name, version, yaml_position} objects for matrix strategy"
+                value: ${{ jobs.extract.outputs.matrix }}
+
+jobs:
+    extract:
+        name: Extract ${{ inputs.version_type }} versions
+        runs-on: ubuntu-latest
+        outputs:
+            matrix: ${{ steps.extract.outputs.matrix }}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Extract versions from ${{ inputs.env_file }}
+              id: extract
+              shell: python
+              env:
+                  LIBRARIES: ${{ inputs.libraries }}
+                  VERSION_TYPE: ${{ inputs.version_type }}
+                  ENV_FILE: ${{ inputs.env_file }}
+              run: |
+                  import json
+                  import os
+                  import re
+                  from pathlib import Path
+
+                  def parse_version_constraint(constraint):
+                      """Parse a conda version constraint and return (min_version, max_version)."""
+                      min_version = None
+                      max_version = None
+
+                      # Match patterns like >=1.2.3 or <=4.5.6 or ==1.0.0
+                      ge_match = re.search(r">=\s*([\d.]+)", constraint)
+                      le_match = re.search(r"<=\s*([\d.]+)", constraint)
+                      eq_match = re.search(r"==\s*([\d.]+)", constraint)
+
+                      if eq_match:
+                          min_version = max_version = eq_match.group(1)
+                      else:
+                          if ge_match:
+                              min_version = ge_match.group(1)
+                          if le_match:
+                              max_version = le_match.group(1)
+
+                      return min_version, max_version
+
+                  def extract_library_info(env_file, library_name):
+                      """Extract version bounds and position for a library from environment.yml."""
+                      content = Path(env_file).read_text()
+                      lines = content.splitlines()
+
+                      # Pattern to match library with version constraint
+                      pattern = rf"^\s*-\s*{re.escape(library_name)}\s*(.*?)$"
+
+                      in_deps = False
+                      dep_count = 0
+
+                      for i, line in enumerate(lines):
+                          if "dependencies:" in line:
+                              in_deps = True
+                              continue
+                          if in_deps:
+                              stripped = line.strip()
+                              if stripped.startswith("-") and not stripped.startswith("#"):
+                                  dep_count += 1
+                                  match = re.match(pattern, line, re.IGNORECASE)
+                                  if match:
+                                      constraint = match.group(1).strip()
+                                      min_ver, max_ver = parse_version_constraint(constraint)
+                                      return {
+                                          "min_version": min_ver,
+                                          "max_version": max_ver,
+                                          "yaml_position": str(dep_count)
+                                      }
+
+                      return None
+
+                  # Main execution
+                  libraries = [lib.strip() for lib in os.environ["LIBRARIES"].split(",") if lib.strip()]
+                  version_type = os.environ["VERSION_TYPE"]
+                  env_file = os.environ["ENV_FILE"]
+
+                  results = []
+
+                  for library_name in libraries:
+                      info = extract_library_info(env_file, library_name)
+                      if info:
+                          if version_type == "min" and info["min_version"]:
+                              results.append({
+                                  "library_name": library_name,
+                                  "version": info["min_version"],
+                                  "yaml_position": info["yaml_position"]
+                              })
+                          elif version_type == "max" and info["max_version"]:
+                              results.append({
+                                  "library_name": library_name,
+                                  "version": info["max_version"],
+                                  "yaml_position": info["yaml_position"]
+                              })
+                          elif version_type == "both":
+                              if info["min_version"]:
+                                  results.append({
+                                      "library_name": library_name,
+                                      "version": info["min_version"],
+                                      "version_type": "min",
+                                      "yaml_position": info["yaml_position"]
+                                  })
+                              if info["max_version"]:
+                                  results.append({
+                                      "library_name": library_name,
+                                      "version": info["max_version"],
+                                      "version_type": "max",
+                                      "yaml_position": info["yaml_position"]
+                                  })
+
+                  matrix_json = json.dumps(results)
+
+                  # Debug output
+                  print("=" * 50)
+                  print(f"Libraries: {libraries}")
+                  print(f"Version type: {version_type}")
+                  print(f"Environment file: {env_file}")
+                  print("=" * 50)
+                  print(f"Generated matrix ({len(results)} entries):")
+                  for entry in results:
+                      print(f"  - {entry['library_name']}: {entry['version']} (position: {entry['yaml_position']})")
+                  print("=" * 50)
+
+                  # Write to GITHUB_OUTPUT
+                  github_output = os.environ.get("GITHUB_OUTPUT", "")
+                  if github_output:
+                      with open(github_output, "a") as f:
+                          f.write(f"matrix={matrix_json}\n")
+
+            - name: Debug - Print extracted matrix
+              run: |
+                  echo "========================================================"
+                  echo "Extracted ${{ inputs.version_type }} versions for matrix"
+                  echo "========================================================"
+                  echo "Libraries requested: ${{ inputs.libraries }}"
+                  echo "Version type:        ${{ inputs.version_type }}"
+                  echo "Environment file:    ${{ inputs.env_file }}"
+                  echo "========================================================"
+                  echo "Output matrix:"
+                  echo '${{ steps.extract.outputs.matrix }}' | python -m json.tool
+                  echo "========================================================"
