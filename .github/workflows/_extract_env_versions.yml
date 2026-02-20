@@ -39,7 +39,7 @@ on:
                 description: "JSON array of [min_version, max_version] for matrix strategy"
                 value: ${{ jobs.extract.outputs.versions }}
             dependency_position:
-                description: "Position of the dependency in the env file (for _run_single_conda_forge_test.yml)"
+                description: "Position of the dependency in the env file (0-based, for _run_single_conda_forge_test.yml)"
                 value: ${{ jobs.extract.outputs.dependency_position }}
 
 jobs:
@@ -54,9 +54,7 @@ jobs:
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4
-            - uses: actions/setup-python@v5
-              with:
-                  python-version: "3.10"
+
             - name: Extract versions from ${{ inputs.env_file }}
               id: extract
               shell: python
@@ -92,37 +90,33 @@ jobs:
                   def extract_library_versions(env_file, library_name):
                       """Extract version bounds for a library from environment.yml."""
                       content = Path(env_file).read_text()
+                      lines = content.splitlines()
 
                       # Pattern to match library with version constraint
                       pattern = rf"^\s*-\s*{re.escape(library_name)}\s*(.*?)$"
 
-                      for line in content.splitlines():
-                          match = re.match(pattern, line, re.IGNORECASE)
-                          if match:
-                              constraint = match.group(1).strip()
-                              min_ver, max_ver = parse_version_constraint(constraint)
+                      in_deps = False
+                      dep_count = 0  # 0-based index
 
-                              # Calculate dependency position
-                              lines = content.splitlines()
-                              in_deps = False
-                              dep_count = 0
-                              for i, l in enumerate(lines):
-                                  if "dependencies:" in l:
-                                      in_deps = True
-                                      continue
-                                  if in_deps:
-                                      stripped = l.strip()
-                                      if stripped.startswith("-") and not stripped.startswith("#"):
-                                          dep_count += 1
-                                          if re.match(pattern, l, re.IGNORECASE):
-                                              break
-
-                              return {
-                                  "min_version": min_ver or "",
-                                  "max_version": max_ver or "",
-                                  "versions": json.dumps([v for v in [min_ver, max_ver] if v]),
-                                  "dependency_position": str(dep_count),
-                              }
+                      for line in lines:
+                          if "dependencies:" in line:
+                              in_deps = True
+                              continue
+                          if in_deps:
+                              stripped = line.strip()
+                              if stripped.startswith("-") and not stripped.startswith("#"):
+                                  match = re.match(pattern, line, re.IGNORECASE)
+                                  if match:
+                                      constraint = match.group(1).strip()
+                                      min_ver, max_ver = parse_version_constraint(constraint)
+                                      return {
+                                          "min_version": min_ver or "",
+                                          "max_version": max_ver or "",
+                                          "versions": json.dumps([v for v in [min_ver, max_ver] if v]),
+                                          "dependency_position": str(dep_count),
+                                      }
+                                  # Only increment AFTER checking if this line matches
+                                  dep_count += 1
 
                       return {
                           "min_version": "",
@@ -149,9 +143,9 @@ jobs:
                   print(f"Min version: {result['min_version']}")
                   print(f"Max version: {result['max_version']}")
                   print(f"Versions JSON: {result['versions']}")
-                  print(f"Dependency position: {result['dependency_position']}")
+                  print(f"Dependency position (0-based): {result['dependency_position']}")
 
-            - name: Print extracted versions
+            - name: Debug - Print extracted versions
               run: |
                   echo "======================================"
                   echo "Extracted versions for: ${{ inputs.library_name }}"
@@ -159,5 +153,5 @@ jobs:
                   echo "Min version:          ${{ steps.extract.outputs.min_version }}"
                   echo "Max version:          ${{ steps.extract.outputs.max_version }}"
                   echo "Versions (JSON):      ${{ steps.extract.outputs.versions }}"
-                  echo "Dependency position:  ${{ steps.extract.outputs.dependency_position }}"
+                  echo "Dependency position:  ${{ steps.extract.outputs.dependency_position }} (0-based)"
                   echo "======================================"

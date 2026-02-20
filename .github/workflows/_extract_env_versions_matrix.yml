@@ -7,7 +7,7 @@
 #       uses: FZJ-IEK3-VSA/.github/.github/workflows/_extract_env_versions_matrix.yml@main
 #       with:
 #         libraries: "python,scikit-learn,pandas,numpy,pyomo,networkx,tqdm,highspy"
-#         version_type: min  # or "max"
+#         version_type: min  # or "max" or "both"
 #
 #     test:
 #       needs: extract-min-versions
@@ -95,16 +95,15 @@ jobs:
                       pattern = rf"^\s*-\s*{re.escape(library_name)}\s*(.*?)$"
 
                       in_deps = False
-                      dep_count = 0
+                      dep_count = 0  # 0-based index
 
-                      for i, line in enumerate(lines):
+                      for line in lines:
                           if "dependencies:" in line:
                               in_deps = True
                               continue
                           if in_deps:
                               stripped = line.strip()
                               if stripped.startswith("-") and not stripped.startswith("#"):
-                                  dep_count += 1
                                   match = re.match(pattern, line, re.IGNORECASE)
                                   if match:
                                       constraint = match.group(1).strip()
@@ -114,6 +113,8 @@ jobs:
                                           "max_version": max_ver,
                                           "yaml_position": str(dep_count)
                                       }
+                                  # Only increment AFTER checking if this line matches
+                                  dep_count += 1
 
                       return None
 
@@ -165,7 +166,7 @@ jobs:
                   print("=" * 50)
                   print(f"Generated matrix ({len(results)} entries):")
                   for entry in results:
-                      print(f"  - {entry['library_name']}: {entry['version']} (position: {entry['yaml_position']})")
+                      print(f"  - {entry['library_name']}: {entry['version']} (position: {entry['yaml_position']}, 0-based)")
                   print("=" * 50)
 
                   # Write to GITHUB_OUTPUT
@@ -183,6 +184,6 @@ jobs:
                   echo "Version type:        ${{ inputs.version_type }}"
                   echo "Environment file:    ${{ inputs.env_file }}"
                   echo "========================================================"
-                  echo "Output matrix:"
+                  echo "Output matrix (yaml_position is 0-based):"
                   echo '${{ steps.extract.outputs.matrix }}' | python -m json.tool
                   echo "========================================================"
