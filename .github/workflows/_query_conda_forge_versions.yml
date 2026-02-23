@@ -76,7 +76,7 @@ on:
             versions_json:
                 description: >
                     JSON array of version strings, sorted ascending (e.g. '["1.0", "1.1", "2.0"]').
-                Use with: matrix: version: fromJSON(needs.<job>.outputs.versions_json)
+                    Use with: matrix: version: fromJSON(needs.<job>.outputs.versions_json)
                 value: ${{ jobs.query-versions.outputs.versions_json }}
             matrix_json:
                 description: >
