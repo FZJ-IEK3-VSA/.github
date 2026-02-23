@@ -76,14 +76,14 @@ on:
             versions_json:
                 description: >
                     JSON array of version strings, sorted ascending (e.g. '["1.0", "1.1", "2.0"]').
-                    Use with: matrix: version: ${{ fromJSON(needs.<job>.outputs.versions_json) }}
+                Use with: matrix: version: fromJSON(needs.<job>.outputs.versions_json)
                 value: ${{ jobs.query-versions.outputs.versions_json }}
             matrix_json:
                 description: >
                     JSON array of objects ready for _run_single_conda_forge_test.yml matrix strategy.
                     Each object contains: library_name, library_version, dependency_position_env_file,
                     and requirements_file_name.
-                    Use with: matrix: include: ${{ fromJSON(needs.<job>.outputs.matrix_json) }}
+                    Use with: matrix: include: fromJSON(needs.<job>.outputs.matrix_json)
                 value: ${{ jobs.query-versions.outputs.matrix_json }}
 
     workflow_dispatch:
