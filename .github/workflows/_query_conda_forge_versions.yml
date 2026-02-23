@@ -1,0 +1,264 @@
+# Reusable workflow to query all available conda-forge versions of a package
+# and optionally filter them by a version range.
+# Place this file at: FZJ-IEK3-VSA/.github/.github/workflows/_query_conda_forge_versions.yml
+#
+# Usage in other repositories:
+#
+#   jobs:
+#     query-versions:
+#       uses: FZJ-IEK3-VSA/.github/.github/workflows/_query_conda_forge_versions.yml@main
+#       with:
+#         package_name: numpy
+#         min_version: "1.23.0"   # optional – omit to start from the oldest available version
+#         max_version: "2.0.0"    # optional – omit to include up to the latest available version
+#         dependency_position_env_file: "5"           # optional – 0-based position in env file
+#         requirements_file_name: "requirements.yml"  # optional – path to env file
+#
+#     test:
+#       needs: query-versions
+#       strategy:
+#         fail-fast: false
+#         matrix:
+#           include: ${{ fromJSON(needs.query-versions.outputs.matrix_json) }}
+#       uses: FZJ-IEK3-VSA/.github/.github/workflows/_run_single_conda_forge_test.yml@main
+#       with:
+#         runner_tag: ubuntu-latest
+#         requirements_file_name:          ${{ matrix.requirements_file_name }}
+#         library_name:                    ${{ matrix.library_name }}
+#         library_version:                 ${{ matrix.library_version }}
+#         dependency_position_env_file:    ${{ matrix.dependency_position_env_file }}
+#
+# Filtering modes:
+#   - All versions:                   omit both min_version and max_version
+#   - From a minimum version:         set min_version only
+#   - Up to a maximum version:        set max_version only
+#   - Between two versions (range):   set both min_version and max_version
+
+name: Query conda-forge package versions
+
+on:
+    workflow_call:
+        inputs:
+            package_name:
+                description: "Name of the conda-forge package to query (e.g. numpy, pandas)"
+                required: true
+                type: string
+            min_version:
+                description: >
+                    Minimum version, inclusive (e.g. '1.23.0').
+                    Leave empty to include all versions from the oldest available.
+                default: ""
+                required: false
+                type: string
+            max_version:
+                description: >
+                    Maximum version, inclusive (e.g. '2.0.0').
+                    Leave empty to include all versions up to the latest available.
+                default: ""
+                required: false
+                type: string
+            dependency_position_env_file:
+                description: >
+                    0-based position of the dependency in the conda environment file.
+                    Forwarded to _run_single_conda_forge_test.yml via the output matrix.
+                    Set to 'skip' to skip the yaml-update step in the test workflow.
+                default: "skip"
+                required: false
+                type: string
+            requirements_file_name:
+                description: >
+                    Path to the conda environment file (e.g. 'requirements.yml').
+                    Forwarded to _run_single_conda_forge_test.yml via the output matrix.
+                default: ""
+                required: false
+                type: string
+        outputs:
+            versions_json:
+                description: >
+                    JSON array of version strings, sorted ascending (e.g. '["1.0", "1.1", "2.0"]').
+                    Use with: matrix: version: ${{ fromJSON(needs.<job>.outputs.versions_json) }}
+                value: ${{ jobs.query-versions.outputs.versions_json }}
+            matrix_json:
+                description: >
+                    JSON array of objects ready for _run_single_conda_forge_test.yml matrix strategy.
+                    Each object contains: library_name, library_version, dependency_position_env_file,
+                    and requirements_file_name.
+                    Use with: matrix: include: ${{ fromJSON(needs.<job>.outputs.matrix_json) }}
+                value: ${{ jobs.query-versions.outputs.matrix_json }}
+
+    workflow_dispatch:
+        inputs:
+            package_name:
+                description: "Name of the conda-forge package to query (e.g. numpy, pandas)"
+                required: true
+                type: string
+            min_version:
+                description: "Minimum version, inclusive (e.g. '1.23.0'). Leave empty for no lower bound."
+                default: ""
+                required: false
+                type: string
+            max_version:
+                description: "Maximum version, inclusive (e.g. '2.0.0'). Leave empty for no upper bound."
+                default: ""
+                required: false
+                type: string
+            dependency_position_env_file:
+                description: "0-based position of the dependency in the conda env file, or 'skip'."
+                default: "skip"
+                required: false
+                type: string
+            requirements_file_name:
+                description: "Path to the conda environment file (e.g. 'requirements.yml')."
+                default: ""
+                required: false
+                type: string
+
+jobs:
+    query-versions:
+        name: "Query conda-forge versions of '${{ inputs.package_name }}'"
+        runs-on: ubuntu-latest
+        outputs:
+            versions_json: ${{ steps.query.outputs.versions_json }}
+            matrix_json: ${{ steps.query.outputs.matrix_json }}
+        steps:
+            - name: Install packaging library
+              run: pip install --quiet packaging
+
+            - name: Query and filter conda-forge versions
+              id: query
+              shell: python
+              env:
+                  PACKAGE_NAME: ${{ inputs.package_name }}
+                  MIN_VERSION: ${{ inputs.min_version }}
+                  MAX_VERSION: ${{ inputs.max_version }}
+                  DEPENDENCY_POSITION: ${{ inputs.dependency_position_env_file }}
+                  REQUIREMENTS_FILE: ${{ inputs.requirements_file_name }}
+              run: |
+                  import json
+                  import os
+                  import urllib.request
+                  import urllib.error
+                  from packaging.version import Version, InvalidVersion
+
+                  package_name = os.environ["PACKAGE_NAME"].strip()
+                  min_version_str = os.environ.get("MIN_VERSION", "").strip()
+                  max_version_str = os.environ.get("MAX_VERSION", "").strip()
+                  dependency_position = os.environ.get("DEPENDENCY_POSITION", "skip").strip()
+                  requirements_file = os.environ.get("REQUIREMENTS_FILE", "").strip()
+
+                  print("=" * 60)
+                  print(f"Package:      {package_name}")
+                  print(f"Min version:  {min_version_str or '(no lower bound)'}")
+                  print(f"Max version:  {max_version_str or '(no upper bound)'}")
+                  print(f"Dep position: {dependency_position}")
+                  print(f"Req file:     {requirements_file or '(not set)'}")
+                  print("=" * 60)
+
+                  # --- Determine active filter mode ---
+                  if min_version_str and max_version_str:
+                      mode = f"between {min_version_str} and {max_version_str} (inclusive)"
+                  elif min_version_str:
+                      mode = f"from {min_version_str} onwards (inclusive)"
+                  elif max_version_str:
+                      mode = f"up to {max_version_str} (inclusive)"
+                  else:
+                      mode = "all versions (no filter)"
+                  print(f"Filter mode:  {mode}")
+                  print("=" * 60)
+
+                  # --- Query the Anaconda.org API for conda-forge ---
+                  url = f"https://api.anaconda.org/package/conda-forge/{package_name}"
+                  req = urllib.request.Request(
+                      url,
+                      headers={"User-Agent": "github-actions/query-conda-forge-versions"}
+                  )
+                  try:
+                      with urllib.request.urlopen(req) as response:
+                          data = json.loads(response.read().decode())
+                  except urllib.error.HTTPError as e:
+                      print(f"ERROR: Could not fetch package info for '{package_name}'. HTTP {e.code}: {e.reason}")
+                      raise SystemExit(1)
+
+                  all_versions = data.get("versions", [])
+                  print(f"Total versions available on conda-forge: {len(all_versions)}")
+
+                  # --- Build version bounds ---
+                  try:
+                      min_ver = Version(min_version_str) if min_version_str else None
+                  except InvalidVersion:
+                      print(f"ERROR: Invalid min_version value: '{min_version_str}'")
+                      raise SystemExit(1)
+
+                  try:
+                      max_ver = Version(max_version_str) if max_version_str else None
+                  except InvalidVersion:
+                      print(f"ERROR: Invalid max_version value: '{max_version_str}'")
+                      raise SystemExit(1)
+
+                  # --- Filter and sort ---
+                  filtered = []
+                  skipped_invalid = []
+                  for v in all_versions:
+                      try:
+                          ver = Version(v)
+                          if min_ver is not None and ver < min_ver:
+                              continue
+                          if max_ver is not None and ver > max_ver:
+                              continue
+                          filtered.append(v)
+                      except InvalidVersion:
+                          skipped_invalid.append(v)
+
+                  filtered.sort(key=lambda v: Version(v))
+
+                  if skipped_invalid:
+                      print(f"Skipped {len(skipped_invalid)} non-PEP-440 version strings: {skipped_invalid}")
+
+                  print(f"Versions after filtering ({len(filtered)}):")
+                  for v in filtered:
+                      print(f"  - {v}")
+                  print("=" * 60)
+
+                  # --- Build outputs ---
+                  versions_json = json.dumps(filtered)
+
+                  # Matrix compatible with _run_single_conda_forge_test.yml
+                  matrix = [
+                      {
+                          "library_name": package_name,
+                          "library_version": v,
+                          "dependency_position_env_file": dependency_position,
+                          "requirements_file_name": requirements_file,
+                      }
+                      for v in filtered
+                  ]
+                  matrix_json = json.dumps(matrix)
+
+                  github_output = os.environ.get("GITHUB_OUTPUT", "")
+                  if github_output:
+                      with open(github_output, "a") as f:
+                          f.write(f"versions_json={versions_json}\n")
+                          f.write(f"matrix_json={matrix_json}\n")
+                  else:
+                      # workflow_dispatch: no caller reads outputs, just print for visibility
+                      print("versions_json output:")
+                      print(versions_json)
+                      print("matrix_json output:")
+                      print(json.dumps(matrix, indent=2))
+
+            - name: Summary
+              shell: bash
+              run: |
+                  echo "### conda-forge version query results" >> "$GITHUB_STEP_SUMMARY"
+                  echo "" >> "$GITHUB_STEP_SUMMARY"
+                  echo "| Input | Value |" >> "$GITHUB_STEP_SUMMARY"
+                  echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+                  echo "| Package | \`${{ inputs.package_name }}\` |" >> "$GITHUB_STEP_SUMMARY"
+                  echo "| Min version | \`${{ inputs.min_version || '—' }}\` |" >> "$GITHUB_STEP_SUMMARY"
+                  echo "| Max version | \`${{ inputs.max_version || '—' }}\` |" >> "$GITHUB_STEP_SUMMARY"
+                  echo "" >> "$GITHUB_STEP_SUMMARY"
+                  echo "**Versions found:** $(echo '${{ steps.query.outputs.versions_json }}' | python3 -c 'import sys,json; v=json.load(sys.stdin); print(len(v))')" >> "$GITHUB_STEP_SUMMARY"
+                  echo "" >> "$GITHUB_STEP_SUMMARY"
+                  echo '```json' >> "$GITHUB_STEP_SUMMARY"
+                  echo '${{ steps.query.outputs.versions_json }}' | python3 -m json.tool >> "$GITHUB_STEP_SUMMARY"
+                  echo '```' >> "$GITHUB_STEP_SUMMARY"

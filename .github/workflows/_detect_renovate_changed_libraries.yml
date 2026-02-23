@@ -1,0 +1,73 @@
+# Reusable workflow – detect dependency names changed by a Renovate PR.
+#
+# Intended to live in the FZJ-IEK3-VSA/.github repository so it can be
+# referenced from multiple repositories as:
+#   uses: FZJ-IEK3-VSA/.github/.github/workflows/_detect_renovate_changed_libraries.yml@main
+
+on:
+  workflow_call:
+    inputs:
+      files:
+        description: >
+          Space-separated list of dependency files to inspect for changes.
+          Paths are relative to the repository root.
+        type: string
+        default: "requirements_dev.yml pyproject.toml"
+        required: false
+    outputs:
+      libraries:
+        description: "Comma-separated list of changed library names (empty if none)."
+        value: ${{ jobs.detect.outputs.libraries }}
+
+jobs:
+  detect:
+    name: Detect changed dependency names
+    runs-on: ubuntu-latest
+    outputs:
+      libraries: ${{ steps.detect.outputs.libraries }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed libraries
+        id: detect
+        env:
+          FILES: ${{ inputs.files }}
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git diff origin/${{ github.base_ref }}...HEAD -- $FILES > /tmp/dep_diff.txt
+
+          python3 << 'PYEOF'
+          import re, os
+
+          with open('/tmp/dep_diff.txt') as f:
+              diff = f.read()
+
+          # Names to skip – not installable packages / environment metadata
+          SKIP = {'pip', 'python', 'nodefaults'}
+
+          packages = set()
+          for line in diff.split('\n'):
+              if not line.startswith('+') or line.startswith('+++'):
+                  continue
+
+              # conda environment style:  "  - scikit-learn >=1.2,<=1.7.2"
+              m = re.match(r'^\+\s+-\s+([A-Za-z0-9][A-Za-z0-9._-]*)', line)
+              if m:
+                  pkg = m.group(1).lower()
+                  if pkg not in SKIP:
+                      packages.add(pkg)
+                  continue
+
+              # pyproject.toml style:  '    "scikit-learn>=1.2,<=1.7.2",'
+              m = re.match(r'^\+\s+"([A-Za-z0-9][A-Za-z0-9._-]*)[>=<!]', line)
+              if m:
+                  packages.add(m.group(1).lower())
+
+          result = ','.join(sorted(packages))
+          print(f"Detected changed libraries: {result or '(none)'}")
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"libraries={result}\n")
+          PYEOF
