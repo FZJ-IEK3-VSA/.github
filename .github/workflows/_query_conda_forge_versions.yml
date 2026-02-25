@@ -209,19 +209,7 @@ jobs:
                       except InvalidVersion:
                           skipped_invalid.append(v)
 
-                  def version_sort_key(v):
-                      """Sort versions numerically, treating each dot-separated component as
-                      an integer. This ensures correct date-based ordering for calendar
-                      versions (e.g. 2022.3.0 < 2022.10.0) as well as regular semantic
-                      versions (e.g. 0.9.0 < 0.10.0), where a plain lexicographic sort
-                      would give the wrong result."""
-                      try:
-                          return tuple(int(part) for part in v.split("."))
-                      except ValueError:
-                          # Fall back to PEP-440 ordering for non-numeric components
-                          return Version(v).release
-
-                  filtered.sort(key=version_sort_key)
+                  filtered.sort(key=lambda v: Version(v))
 
                   if skipped_invalid:
                       print(f"Skipped {len(skipped_invalid)} non-PEP-440 version strings: {skipped_invalid}")
