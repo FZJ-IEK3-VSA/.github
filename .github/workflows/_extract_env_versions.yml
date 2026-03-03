@@ -53,7 +53,7 @@ jobs:
             dependency_position: ${{ steps.extract.outputs.dependency_position }}
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
 
             - name: Extract versions from ${{ inputs.env_file }}
               id: extract

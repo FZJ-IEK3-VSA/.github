@@ -52,7 +52,7 @@ jobs:
     runs-on: ${{ inputs.runner_tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: 25.3.0-3
