@@ -45,7 +45,7 @@ jobs:
               diff = f.read()
 
           # Names to skip – not installable packages / environment metadata
-          SKIP = {'pip', 'python', 'nodefaults'}
+          SKIP = {'pip', 'nodefaults'}
 
           packages = set()
           for line in diff.split('\n'):
