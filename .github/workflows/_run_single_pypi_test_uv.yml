@@ -70,7 +70,7 @@ jobs:
           enable-cache: true
           python-version: ${{ inputs.python_version }}
       - name: Create virtual environment
-        run: uv venv .venv --python ${{ inputs.python_version }}
+        run: uv venv .venv --python ${{ inputs.python_version }} --clear
       - name: Add venv to PATH
         run: |
           "${{ github.workspace }}\.venv\Scripts" | Out-File -FilePath $Env:GITHUB_PATH -Encoding utf8 -Append
