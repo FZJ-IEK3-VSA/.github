@@ -46,6 +46,11 @@ on:
         default: ""
         required: false
         type: string
+      additional_conda_channel:
+        description: "Additional conda channel to search for packages (e.g. 'gurobi'). When provided, it is added via -c flag to mamba env create."
+        default: ""
+        required: false
+        type: string
     secrets:
       ZENODO_API_KEY:
         description: "Zenodo API that is used to increase the acceptable download limit."
@@ -106,7 +111,7 @@ jobs:
         run: |
           get-content ${{ inputs.requirements_file_name }}
           ls
-          mamba env create --name test_env --file=${{ inputs.requirements_file_name }} 
+          mamba env create --name test_env --file=${{ inputs.requirements_file_name }} ${{ inputs.additional_conda_channel != '' && format('-c {0}', inputs.additional_conda_channel) || '' }}
           echo "LS Done" 
           mamba run --name test_env pip install -e . --no-deps
           echo "Installation done"
