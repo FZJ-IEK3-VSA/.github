@@ -122,6 +122,15 @@ jobs:
           echo "All dependencies are shown"
           mamba run --name test_env uv pip check
           echo "Checked for dependency conflicts"
+      - name: Write Gurobi WLS license file
+        run: |
+          if ($env:WLSACCESSID -and $env:WLSSECRET -and $env:LICENSEID) {
+            $content = "WLSACCESSID=$env:WLSACCESSID`nWLSSECRET=$env:WLSSECRET`nLICENSEID=$env:LICENSEID`n"
+            [IO.File]::WriteAllText((Join-Path $HOME "gurobi.lic"), $content)
+            echo "Gurobi WLS license file written to $HOME/gurobi.lic"
+          } else {
+            echo "No Gurobi WLS credentials found, skipping license file creation"
+          }
       - name: Run Pytest
         run: |
           echo "start pytest"

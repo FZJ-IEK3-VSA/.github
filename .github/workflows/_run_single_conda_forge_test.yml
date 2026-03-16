@@ -112,6 +112,15 @@ jobs:
           echo "Installation done"
           mamba list --name test_env
           echo "packages printed"
+      - name: Write Gurobi WLS license file
+        run: |
+          if ($env:WLSACCESSID -and $env:WLSSECRET -and $env:LICENSEID) {
+            $content = "WLSACCESSID=$env:WLSACCESSID`nWLSSECRET=$env:WLSSECRET`nLICENSEID=$env:LICENSEID`n"
+            [IO.File]::WriteAllText((Join-Path $HOME "gurobi.lic"), $content)
+            echo "Gurobi WLS license file written to $HOME/gurobi.lic"
+          } else {
+            echo "No Gurobi WLS credentials found, skipping license file creation"
+          }
       - name: Run tests
         run: |
           echo "start pytest"
