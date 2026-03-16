@@ -16,6 +16,11 @@ on:
         default: ""
         required: false
         type: string
+      additional_conda_channel:
+        description: "Additional conda channel to search for packages (e.g. 'defaults' or 'bioconda'). When provided, it is added via -c flag to mamba env create."
+        default: ""
+        required: false
+        type: string
       library_name:
         description: "Name of the library which should be installed for a specific version"
         default: ""
@@ -55,6 +60,16 @@ on:
         default: false
         required: false
         type: boolean
+    secrets:
+      WLSACCESSID:
+        description: "Gurobi WLS access ID for the WLS license."
+        required: false
+      WLSSECRET:
+        description: "Gurobi WLS secret for the WLS license."
+        required: false
+      LICENSEID:
+        description: "Gurobi WLS license ID."
+        required: false
 
 defaults:
   run:
@@ -64,6 +79,10 @@ jobs:
   run-pypi-test:
     name: "Run test for ${{ inputs.library_name }}=${{ inputs.library_version }} on ${{ inputs.runner_tag }}"
     runs-on: ${{ inputs.runner_tag }}
+    env:
+      WLSACCESSID: ${{ secrets.WLSACCESSID }}
+      WLSSECRET: ${{ secrets.WLSSECRET }}
+      LICENSEID: ${{ secrets.LICENSEID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -79,7 +98,7 @@ jobs:
         run: |
           ls
           echo "LS Done"
-          mamba env create --name test_env python=${{ inputs.python_version }} uv ${{ inputs.additional_conda_forge_dependencies }}
+          mamba env create --name test_env python=${{ inputs.python_version }} uv ${{ inputs.additional_conda_forge_dependencies }} ${{ inputs.additional_conda_channel != '' && format('-c {0}', inputs.additional_conda_channel) || '' }}
           echo "Python setup is done"
           mamba list --name test_env
           echo "Print dependencies from conda forge before installing PyPI dependencies"

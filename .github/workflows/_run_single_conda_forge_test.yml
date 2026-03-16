@@ -53,6 +53,15 @@ on:
       ZENODO_USER_AGENT_STRING:
         description: "User agent string that is used when accessing Zenodo to increase the acceptable download limit."
         required: false
+      WLSACCESSID:
+        description: "Gurobi WLS access ID for the WLS license."
+        required: false
+      WLSSECRET:
+        description: "Gurobi WLS secret for the WLS license."
+        required: false
+      LICENSEID:
+        description: "Gurobi WLS license ID."
+        required: false
 
 defaults:
   run:
@@ -65,6 +74,9 @@ jobs:
     env:
       ZENODO_API_KEY: ${{ secrets.ZENODO_API_KEY }}
       ZENODO_USER_AGENT_STRING: ${{ secrets.ZENODO_USER_AGENT_STRING }}
+      WLSACCESSID: ${{ secrets.WLSACCESSID }}
+      WLSSECRET: ${{ secrets.WLSSECRET }}
+      LICENSEID: ${{ secrets.LICENSEID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
