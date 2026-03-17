@@ -92,8 +92,10 @@ jobs:
                       content = Path(env_file).read_text()
                       lines = content.splitlines()
 
-                      # Pattern to match library with version constraint
-                      pattern = rf"^\s*-\s*{re.escape(library_name)}\s*(.*?)$"
+                      # Pattern to match library with version constraint.
+                      # Use (?=\s|[><=!,]|$) lookahead so that e.g. "gurobi" does not
+                      # accidentally match "gurobi-logtools".
+                      pattern = rf"^\s*-\s*{re.escape(library_name)}(?=\s|[><=!,]|$)(.*?)$"
 
                       in_deps = False
                       dep_count = 0  # 0-based index
