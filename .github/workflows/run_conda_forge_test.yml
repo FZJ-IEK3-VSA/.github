@@ -176,11 +176,11 @@ jobs:
 
       - name: Run tests
         run: |
-          $coverageArgs = ""
+          $coverageArgs = @()
           if ("${{ inputs.coverage }}" -eq "true") {
-            $coverageArgs = "--cov=${{ inputs.coverage_package_name }} --cov-report=xml"
+            $coverageArgs = @("--cov=${{ inputs.coverage_package_name }}", "--cov-report=xml")
           }
-          mamba run --name test_env pytest ${{ inputs.multiprocessing_pytest_string }} $coverageArgs -vv
+          mamba run --name test_env pytest ${{ inputs.multiprocessing_pytest_string }} @coverageArgs -vv
 
       - name: Upload coverage to Codecov
         if: ${{ inputs.coverage }}

@@ -227,20 +227,20 @@ jobs:
       - name: Run tests (conda-based)
         if: ${{ inputs.installer == 'pip' || inputs.installer == 'uv_miniforge' }}
         run: |
-          $coverageArgs = ""
+          $coverageArgs = @()
           if ("${{ inputs.coverage }}" -eq "true") {
-            $coverageArgs = "--cov=${{ inputs.coverage_package_name }} --cov-report=xml"
+            $coverageArgs = @("--cov=${{ inputs.coverage_package_name }}", "--cov-report=xml")
           }
-          mamba run --name test_env pytest ${{ inputs.multiprocessing_pytest_string }} $coverageArgs -vv
+          mamba run --name test_env pytest ${{ inputs.multiprocessing_pytest_string }} @coverageArgs -vv
 
       - name: Run tests (uv)
         if: ${{ inputs.installer == 'uv' }}
         run: |
-          $coverageArgs = ""
+          $coverageArgs = @()
           if ("${{ inputs.coverage }}" -eq "true") {
-            $coverageArgs = "--cov=${{ inputs.coverage_package_name }} --cov-report=xml"
+            $coverageArgs = @("--cov=${{ inputs.coverage_package_name }}", "--cov-report=xml")
           }
-          pytest ${{ inputs.multiprocessing_pytest_string }} $coverageArgs -vv
+          pytest ${{ inputs.multiprocessing_pytest_string }} @coverageArgs -vv
 
       # --- Common: Upload coverage ---
       - name: Upload coverage to Codecov
