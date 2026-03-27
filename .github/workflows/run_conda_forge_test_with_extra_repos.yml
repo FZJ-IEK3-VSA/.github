@@ -257,9 +257,15 @@ jobs:
         run: |
           $coverageArgs = ""
           if ("${{ inputs.coverage }}" -eq "true") {
-            $coverageArgs = "--cov=${{ inputs.coverage_package_name }} --cov-report=xml"
+            $coverageArgs = "--cov=${{ inputs.coverage_package_name }} --cov-report="
           }
           mamba run --name test_env pytest ${{ inputs.multiprocessing_pytest_string }} $coverageArgs -vv
+
+      - name: Generate coverage report
+        if: ${{ inputs.coverage }}
+        run: |
+          mamba run --name test_env coverage combine
+          mamba run --name test_env coverage xml
 
       - name: Upload coverage to Codecov
         if: ${{ inputs.coverage }}
