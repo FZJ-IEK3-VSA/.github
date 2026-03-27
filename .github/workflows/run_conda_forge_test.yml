@@ -68,12 +68,12 @@ on:
         required: false
         type: string
       multiprocessing_example_string:
-        description: "pytest-xdist parallelism for examples (e.g. '-n auto', '-n 3')"
+        description: "pytest-xdist parallelism for examples (e.g. '-n auto', '-n 3'). Requires pytest-xdist and nbval in the project's requirements file."
         default: ""
         required: false
         type: string
       multiprocessing_pytest_string:
-        description: "pytest-xdist parallelism for tests (e.g. '-n auto', '-n 3')"
+        description: "pytest-xdist parallelism for tests (e.g. '-n auto', '-n 3'). Requires pytest-xdist in the project's requirements file."
         default: ""
         required: false
         type: string
@@ -88,7 +88,7 @@ on:
         required: false
         type: boolean
       coverage:
-        description: "Enable pytest-cov coverage collection and Codecov upload. Use in exactly one matrix entry."
+        description: "Enable pytest-cov coverage collection and Codecov upload. Use in exactly one matrix entry. Requires pytest-cov in the project's requirements file."
         default: false
         required: false
         type: boolean
@@ -173,10 +173,6 @@ jobs:
           } else {
             echo "No Gurobi WLS credentials found, skipping license file creation"
           }
-
-      - name: Install coverage tools
-        if: ${{ inputs.coverage }}
-        run: mamba run --name test_env pip install pytest-cov
 
       - name: Run tests
         run: |
