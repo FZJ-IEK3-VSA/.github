@@ -9,14 +9,14 @@
 #   jobs:
 #     detect:
 #       if: startsWith(github.head_ref, 'renovate/')
-#       uses: FZJ-IEK3-VSA/.github/.github/workflows/v1/detect_renovate_changes.yml@v1
+#       uses: FZJ-IEK3-VSA/.github/.github/workflows/detect_renovate_changes.yml@v1
 #       with:
 #         files: "requirements-dev.yml pyproject.toml"
 #
 #     extract:
 #       needs: detect
 #       if: needs.detect.outputs.libraries != ''
-#       uses: FZJ-IEK3-VSA/.github/.github/workflows/v1/extract_versions.yml@v1
+#       uses: FZJ-IEK3-VSA/.github/.github/workflows/extract_versions.yml@v1
 #       with:
 #         libraries: ${{ needs.detect.outputs.libraries }}
 #         version_type: max

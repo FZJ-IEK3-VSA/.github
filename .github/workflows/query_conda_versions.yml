@@ -8,7 +8,7 @@
 # Usage:
 #   jobs:
 #     query:
-#       uses: FZJ-IEK3-VSA/.github/.github/workflows/v1/query_conda_versions.yml@v1
+#       uses: FZJ-IEK3-VSA/.github/.github/workflows/query_conda_versions.yml@v1
 #       with:
 #         package_name: numpy
 #         min_version: "1.23.0"
@@ -22,7 +22,7 @@
 #         fail-fast: false
 #         matrix:
 #           include: ${{ fromJSON(needs.query.outputs.matrix_json) }}
-#       uses: FZJ-IEK3-VSA/.github/.github/workflows/v1/run_conda_forge_test.yml@v1
+#       uses: FZJ-IEK3-VSA/.github/.github/workflows/run_conda_forge_test.yml@v1
 #       with:
 #         runner_tag: self-hosted
 #         requirements_file_name: ${{ matrix.requirements_file_name }}

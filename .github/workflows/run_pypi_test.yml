@@ -19,7 +19,7 @@
 # Usage:
 #   jobs:
 #     test:
-#       uses: FZJ-IEK3-VSA/.github/.github/workflows/v1/run_pypi_test.yml@v1
+#       uses: FZJ-IEK3-VSA/.github/.github/workflows/run_pypi_test.yml@v1
 #       secrets: inherit
 #       with:
 #         runner_tag: ubuntu-latest

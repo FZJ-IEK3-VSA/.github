@@ -6,13 +6,13 @@
 # Usage:
 #   jobs:
 #     lint:
-#       uses: FZJ-IEK3-VSA/.github/.github/workflows/v1/lint.yml@v1
+#       uses: FZJ-IEK3-VSA/.github/.github/workflows/lint.yml@v1
 #       with:
 #         config_file: pyproject.toml
 #
 #   # Or with a pinned ruff version:
 #     lint:
-#       uses: FZJ-IEK3-VSA/.github/.github/workflows/v1/lint.yml@v1
+#       uses: FZJ-IEK3-VSA/.github/.github/workflows/lint.yml@v1
 #       with:
 #         config_file: ruff.toml
 #         ruff_version: "0.13.1"

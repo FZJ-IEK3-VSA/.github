@@ -18,7 +18,7 @@
 #
 #   jobs:
 #     mirror:
-#       uses: FZJ-IEK3-VSA/.github/.github/workflows/v1/sync_jugit.yml@v1
+#       uses: FZJ-IEK3-VSA/.github/.github/workflows/sync_jugit.yml@v1
 #       secrets: inherit
 #       with:
 #         jugit_repo_path: "iek-3/shared-code/tsam"

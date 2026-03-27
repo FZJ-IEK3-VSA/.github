@@ -11,7 +11,7 @@
 # Usage (single library):
 #   jobs:
 #     extract:
-#       uses: FZJ-IEK3-VSA/.github/.github/workflows/v1/extract_versions.yml@v1
+#       uses: FZJ-IEK3-VSA/.github/.github/workflows/extract_versions.yml@v1
 #       with:
 #         libraries: "python"
 #         env_file: environment.yml
@@ -29,7 +29,7 @@
 # Usage (multiple libraries, min/max/both):
 #   jobs:
 #     extract:
-#       uses: FZJ-IEK3-VSA/.github/.github/workflows/v1/extract_versions.yml@v1
+#       uses: FZJ-IEK3-VSA/.github/.github/workflows/extract_versions.yml@v1
 #       with:
 #         libraries: "numpy,pandas,scipy,scikit-learn"
 #         version_type: both
