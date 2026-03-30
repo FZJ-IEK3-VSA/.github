@@ -108,6 +108,11 @@ on:
         default: ""
         required: false
         type: string
+      docs_build_command:
+        description: "Command to build documentation (e.g. 'mkdocs build --strict'). Skipped when empty. Requires mkdocs and any extensions needed for the build in the project's dependencies."
+        default: ""
+        required: false
+        type: string
     secrets:
       WLSACCESSID:
         description: "Gurobi WLS access ID"
@@ -250,6 +255,17 @@ jobs:
           files: ./coverage.xml
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      # --- Common: Build documentation ---
+      - name: Build documentation (conda-based)
+        if: ${{ inputs.docs_build_command != '' && (inputs.installer == 'pip' || inputs.installer == 'uv_miniforge') }}
+        run: |
+          mamba run --name test_env ${{ inputs.docs_build_command }}
+
+      - name: Build documentation (uv)
+        if: ${{ inputs.docs_build_command != '' && inputs.installer == 'uv' }}
+        run: |
+          ${{ inputs.docs_build_command }}
 
       # --- Common: Run examples ---
       - name: Run all examples (conda-based)
