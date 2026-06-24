@@ -1,0 +1,140 @@
+# v1 reusable workflow: Manually test a dependency across conda-forge versions
+#
+# Orchestrates three reusable workflows:
+#   1. extract_versions.yml      — find the dependency's position in the env file
+#   2. query_conda_versions.yml  — list all conda-forge versions within the bounds
+#   3. run_conda_forge_test_with_extra_repos.yml — run the suite once per version
+#
+# Designed to be called from a thin workflow_dispatch wrapper in the consuming
+# repo, which supplies the repo-specific values (requirements file, extra repos).
+#
+# Usage (in the consuming repo, e.g. .github/workflows/test_manual_dependency_version.yml):
+#   on:
+#     workflow_dispatch:
+#       inputs:
+#         library:                  { required: true,  type: string }
+#         min_version:              { required: false, type: string, default: "" }
+#         max_version:              { required: false, type: string, default: "" }
+#         runner_tag:               { required: true,  type: string, default: "self-hosted" }
+#         additional_conda_channel: { required: false, type: string, default: "" }
+#   jobs:
+#     manual-dependency-test:
+#       uses: FZJ-IEK3-VSA/.github/.github/workflows/test_manual_dependency_version.yml@v1
+#       secrets: inherit
+#       with:
+#         library:                  ${{ inputs.library }}
+#         min_version:              ${{ inputs.min_version }}
+#         max_version:              ${{ inputs.max_version }}
+#         runner_tag:               ${{ inputs.runner_tag }}
+#         requirements_file_name:   requirements-dev.yml
+#         # Optional — for repos that depend on unreleased sibling repos:
+#         extra_repos: '[{"repo": "FZJ-IEK3-VSA/geokit"}]'
+#         additional_conda_channel: ${{ inputs.additional_conda_channel }}
+
+name: "v1: Manual dependency version test"
+
+on:
+  workflow_call:
+    inputs:
+      library:
+        description: "Dependency library name to test (e.g. numpy)"
+        required: true
+        type: string
+      min_version:
+        description: "Minimum (lower-bound) version to test (optional)"
+        required: false
+        type: string
+        default: ""
+      max_version:
+        description: "Maximum (upper-bound) version to test (optional)"
+        required: false
+        type: string
+        default: ""
+      runner_tag:
+        description: "Runner to execute the tests on (e.g. self-hosted, ubuntu-latest)"
+        required: false
+        type: string
+        default: "self-hosted"
+      requirements_file_name:
+        description: "Conda environment YAML file. Used both to locate the dependency (env_file) and as the file whose entry is pinned during testing."
+        required: false
+        type: string
+        default: "requirements-dev.yml"
+      extra_repos:
+        description: |
+          JSON array of extra repositories to checkout, merge requirements from, and install.
+          Each entry: {"repo":"org/name","ref":"branch","requirements_file":"requirements-dev.yml"}.
+          Defaults to '[]' (no extra repos).
+        required: false
+        type: string
+        default: "[]"
+      ipynb_example_folder:
+        description: "Folder containing Jupyter notebook examples to execute as tests"
+        required: false
+        type: string
+        default: ""
+      examples_to_execute:
+        description: "Space-separated relative paths of specific examples to execute"
+        required: false
+        type: string
+        default: ""
+      multiprocessing_pytest_string:
+        description: "pytest-xdist parallelism for tests (e.g. '-n auto', '-n 3')"
+        required: false
+        type: string
+        default: "-n auto"
+      multiprocessing_example_string:
+        description: "pytest-xdist parallelism for examples (e.g. '-n auto', '-n 3')"
+        required: false
+        type: string
+        default: ""
+      additional_conda_channel:
+        description: "Additional conda channel (e.g. 'gurobi'). Used both to query versions and when creating the test environment."
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  # Resolve the position of the library inside the env file so the test
+  # workflow knows which dependency entry to override.
+  extract-position:
+    uses: FZJ-IEK3-VSA/.github/.github/workflows/extract_versions.yml@v1
+    with:
+      libraries: ${{ inputs.library }}
+      env_file: ${{ inputs.requirements_file_name }}
+
+  # Query conda-forge for all versions of the library within the given bounds
+  # and produce a matrix ready for the test workflow.
+  query-versions:
+    needs: extract-position
+    uses: FZJ-IEK3-VSA/.github/.github/workflows/query_conda_versions.yml@v1
+    with:
+      package_name: ${{ inputs.library }}
+      min_version: ${{ inputs.min_version }}
+      max_version: ${{ inputs.max_version }}
+      dependency_position_env_file: ${{ needs.extract-position.outputs.dependency_position }}
+      requirements_file_name: ${{ inputs.requirements_file_name }}
+      conda_channel: ${{ inputs.additional_conda_channel || 'conda-forge' }}
+
+  TestManualVersions:
+    name: "Test ${{ matrix.library_name }} ${{ matrix.library_version }}"
+    needs: query-versions
+    if: needs.query-versions.outputs.matrix_json != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.query-versions.outputs.matrix_json) }}
+    uses: FZJ-IEK3-VSA/.github/.github/workflows/run_conda_forge_test_with_extra_repos.yml@v1
+    secrets: inherit
+    with:
+      runner_tag: ${{ inputs.runner_tag }}
+      requirements_file_name: ${{ matrix.requirements_file_name }}
+      extra_repos: ${{ inputs.extra_repos }}
+      library_name: ${{ matrix.library_name }}
+      library_version: ${{ matrix.library_version }}
+      dependency_position_env_file: ${{ matrix.dependency_position_env_file }}
+      ipynb_example_folder: ${{ inputs.ipynb_example_folder }}
+      examples_to_execute: ${{ inputs.examples_to_execute }}
+      multiprocessing_pytest_string: ${{ inputs.multiprocessing_pytest_string }}
+      multiprocessing_example_string: ${{ inputs.multiprocessing_example_string }}
+      additional_conda_channel: ${{ inputs.additional_conda_channel }}
