@@ -10,7 +10,6 @@
 #   - `coverage` + `coverage_package_name` for optional Codecov integration
 #   - `additional_conda_channel` support (was missing in test workflows)
 #   - Consistent miniforge version across all usage
-#   - `cache_environment` to reuse the solved conda environment between runs
 #
 # Usage:
 #   jobs:
@@ -98,11 +97,6 @@ on:
         default: ""
         required: false
         type: string
-      cache_environment:
-        description: "Cache the created conda environment with actions/cache and skip the solve on a hit. The key covers the (pinned) requirements file, the additional channel, the OS/arch and the ISO week, so new conda-forge releases are picked up at least weekly."
-        default: false
-        required: false
-        type: boolean
       docs_build_command:
         description: "Command to build documentation (e.g. 'mkdocs build --strict'). Skipped when empty. Requires mkdocs and any extensions needed for the build in the project's requirements file."
         default: ""
@@ -168,27 +162,10 @@ jobs:
           conda-remove-defaults: "true"
           auto-activate-base: false
 
-      - name: Get cache week
-        id: cache-week
-        if: ${{ inputs.cache_environment }}
-        run: echo "week=$(Get-Date -UFormat %G-%V)" >> $env:GITHUB_OUTPUT
-
-      - name: Restore cached environment
-        id: env-cache
-        if: ${{ inputs.cache_environment }}
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.CONDA }}/envs/test_env
-          key: conda-env-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(inputs.requirements_file_name) }}-${{ inputs.additional_conda_channel }}-${{ steps.cache-week.outputs.week }}
-
       - name: Setup environment
-        if: ${{ steps.env-cache.outputs.cache-hit != 'true' }}
         run: |
           get-content ${{ inputs.requirements_file_name }}
           mamba env create --name test_env --file=${{ inputs.requirements_file_name }} ${{ inputs.additional_conda_channel != '' && format('-c {0}', inputs.additional_conda_channel) || '' }}
-
-      - name: Install package
-        run: |
           mamba run --name test_env pip install -e . --no-deps
           mamba list --name test_env
 
