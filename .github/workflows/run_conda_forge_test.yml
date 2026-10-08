@@ -11,6 +11,7 @@
 #   - `additional_conda_channel` support (was missing in test workflows)
 #   - Consistent miniforge version across all usage
 #   - `cache_environment` to reuse the solved conda environment between runs
+#   - `pip_no_build_isolation` to install the package with the env's build backend
 #
 # Usage:
 #   jobs:
@@ -103,6 +104,11 @@ on:
         default: false
         required: false
         type: boolean
+      pip_no_build_isolation:
+        description: "Run 'pip install -e .' with --no-build-isolation, so pip does not download the build backend from PyPI on every run. Requires the build backend (e.g. setuptools, setuptools-scm) in the project's requirements file."
+        default: false
+        required: false
+        type: boolean
       docs_build_command:
         description: "Command to build documentation (e.g. 'mkdocs build --strict'). Skipped when empty. Requires mkdocs and any extensions needed for the build in the project's requirements file."
         default: ""
@@ -189,7 +195,7 @@ jobs:
 
       - name: Install package
         run: |
-          mamba run --name test_env pip install -e . --no-deps
+          mamba run --name test_env pip install -e . --no-deps ${{ inputs.pip_no_build_isolation && '--no-build-isolation' || '' }}
           mamba list --name test_env
 
       - name: Write Gurobi WLS license file
